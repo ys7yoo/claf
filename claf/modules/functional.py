@@ -109,7 +109,7 @@ def get_sorted_seq_config(features, pad_index=0):
 
 def forward_rnn_with_pack(rnn_module, tensor, seq_config):
     sorted_tensor = tensor[seq_config["perm_idx"]]
-    packed_input = pack_padded_sequence(sorted_tensor, seq_config["seq_lengths"], batch_first=True)
+    packed_input = pack_padded_sequence(sorted_tensor, seq_config["seq_lengths"].cpu(), batch_first=True)
     packed_output, _ = rnn_module(packed_input)
     output, _ = pad_packed_sequence(packed_output, batch_first=True)
     output = output[seq_config["unperm_idx"]]  # restore origin order
