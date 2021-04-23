@@ -44,7 +44,7 @@
         "fasttext": {
             "embedding": {
                 "embed_dim": 300,
-                "pretrained_path": "<fasttext.wiki.ko.300d.txt path>",
+                "pretrained_path": "embedding/fasttext/cc.ko.300.vec",
                 "trainable": false,
                 "dropout": 0.2
             }
