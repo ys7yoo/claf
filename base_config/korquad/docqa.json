@@ -81,5 +81,6 @@
             "patience": 2
         }
     },
-    "seed_num": 2
+    "seed_num": 2,
+    "cuda_devices": [0]
 }
