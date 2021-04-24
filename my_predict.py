@@ -5,6 +5,7 @@ from claf.learn.experiment import Experiment
 from claf.learn.mode import Mode
 
 import torch
+import numpy as np
 
 if __name__ == "__main__":
     experiment = Experiment(Mode.PREDICT, args.config(mode=Mode.PREDICT))
@@ -29,6 +30,11 @@ if __name__ == "__main__":
     with torch.no_grad():
         tensor_feature, helper = raw_to_tensor_fn(raw_feature)
         output_dict = model(tensor_feature)
+
+        for k, v in output_dict.items():
+            value = v.cpu().detach().numpy()
+            print(k, value)
+            np.save(k, value)
 
         result = model.predict(output_dict, arguments, helper)
 
