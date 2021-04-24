@@ -40,7 +40,7 @@ model:
     answer_maxlen: 30
 
 trainer:
-  log_dir: "logs/test/bert_for_qa/"
+  log_dir: "logs/squad_bert_cased"
   num_epochs: 5
   early_stopping_threshold: 10
   metric_key: "f1"
