@@ -64,7 +64,7 @@ def train_config(parser, input_argv=None):
     if use_base_config:
         base_config_path = os.path.join("base_config", config.base_config)
         base_config_path = utils.add_config_extension(base_config_path)
-        defined_config = utils.read_config()
+        defined_config = utils.read_config(base_config_path)
         # config.overwrite(defined_config)
 
         config = NestedNamespace()

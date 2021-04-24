@@ -1,8 +1,8 @@
  {
      "data_reader": {
          "dataset": "squad_bert",
-         "train_file_path": "https://korquad.github.io/dataset/KorQuAD_v1.0_train.json",
-         "valid_file_path": "https://korquad.github.io/dataset/KorQuAD_v1.0_dev.json",
+         "train_file_path": "datasets/KorQuAD/KorQuAD_v1.0_train.json",
+         "valid_file_path": "datasets/KorQuAD/KorQuAD_v1.0_dev.json",
          "squad_bert": {
              "lang_code": "ko",
              "max_seq_length": 512,
@@ -66,5 +66,6 @@
              "warmup_proportion": 0.1
          }
      },
-     "seed_num": 42
+     "seed_num": 42,
+     "cuda_devices": [0,1,2]
  }
