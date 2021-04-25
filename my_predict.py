@@ -28,7 +28,11 @@ if __name__ == "__main__":
 
     model.eval()
     with torch.no_grad():
+        print(raw_feature)
         tensor_feature, helper = raw_to_tensor_fn(raw_feature)
+        print(tensor_feature)
+        print(helper)
+
         output_dict = model(tensor_feature)
 
         for k, v in output_dict.items():
