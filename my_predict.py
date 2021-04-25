@@ -8,7 +8,17 @@ import torch
 import numpy as np
 
 if __name__ == "__main__":
+
+    # load context and question from files
+    with open('text/context_001.txt', 'r') as fc, open('text/question_001.txt', 'r') as fq:
+        context = fc.readlines()
+        question = fq.readlines()
+
+    # set up experiment
     experiment = Experiment(Mode.PREDICT, args.config(mode=Mode.PREDICT))
+
+    experiment.argument.context = ''.join(context)
+    experiment.argument.question = ''.join(question)
 
     # set_global_seed(experiment.config.seed_num)  # For Reproducible
 
