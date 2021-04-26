@@ -4,6 +4,7 @@ from claf.config import args
 from claf.factory import TokenMakersFactory, DataReaderFactory
 from claf.learn.experiment import Experiment
 from claf.learn.mode import Mode
+from claf.config.args import NestedNamespace
 
 import torch
 import numpy as np
@@ -45,6 +46,41 @@ def predict(output_dict, context_text, helper):  # from class ReadingComprehensi
 
     return {"text": answer_text, "score": score}
 
+
+def read_checkpoint(cuda_devices, checkpoint_path, prev_cuda_device_id=None):
+    if cuda_devices == "cpu":
+        return torch.load(checkpoint_path, map_location="cpu")  # use CPU
+
+    if torch.cuda.is_available():
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location={
+                f"cuda:{prev_cuda_device_id}": f"cuda:{cuda_devices[0]}"
+            },  # different cuda_device id case (save/load)
+        )
+    else:
+        checkpoint = torch.load(checkpoint_path, map_location="cpu")  # use CPU
+    return checkpoint
+
+def get_saved_config(model_checkpoint): #, use_gpu, cuda_devices):
+    saved_config_dict = model_checkpoint["config"]
+    # self.config_dict = saved_config_dict
+
+    # logger.info("Load saved_config ...")
+    # logger.info(pretty_json_dumps(saved_config_dict))
+
+    saved_config = NestedNamespace()
+    saved_config.load_from_json(saved_config_dict)
+
+    # is_use_gpu = self.config.use_gpu
+
+    # self.config = saved_config
+    # self.config.use_gpu = is_use_gpu
+    # self.config.cuda_devices = cuda_devices
+
+    return saved_config
+
+
 if __name__ == "__main__":
 
     # load context and question from files
@@ -60,27 +96,34 @@ if __name__ == "__main__":
     experiment.argument.context = ''.join(context)
     experiment.argument.question = ''.join(question)
 
-    # set_global_seed(experiment.config.seed_num)  # For Reproducible
+    # set_global_seed(saved_config.seed_num)  # For Reproducible
 
     # set up predict mode (experiment.set_predict_mode())
-    assert experiment.mode.endswith(mode)
-
-    # experiment._create_data_and_token_makers()
-    token_makers = TokenMakersFactory().create(experiment.config.token)
-    tokenizers = token_makers["tokenizers"]
-    del token_makers["tokenizers"]
-    experiment.config.data_reader.tokenizers = tokenizers
-
-    data_reader = DataReaderFactory().create(experiment.config.data_reader)
+    assert experiment.mode.endswith(Mode.PREDICT)
 
     # load model checkpoint
     cuda_devices = experiment.argument.cuda_devices
     checkpoint_path = experiment.argument.checkpoint_path
     prev_cuda_device_id = getattr(experiment.argument, "prev_cuda_device_id", None)
 
-    model_checkpoint = experiment._read_checkpoint(
+    # model_checkpoint = experiment._read_checkpoint(
+    model_checkpoint = read_checkpoint(
         cuda_devices, checkpoint_path, prev_cuda_device_id=prev_cuda_device_id
     )
+
+    saved_config = get_saved_config(model_checkpoint)
+    saved_config.use_gpu = config.use_gpu
+    saved_config.cuda_devices = cuda_devices
+    
+    # experiment._create_data_and_token_makers()
+    token_makers = TokenMakersFactory().create(saved_config.token)
+    tokenizers = token_makers["tokenizers"]
+    del token_makers["tokenizers"]
+    saved_config.data_reader.tokenizers = tokenizers
+
+    data_reader = DataReaderFactory().create(saved_config.data_reader)
+
+
 
 
     # Token & Vocab
@@ -96,7 +139,7 @@ if __name__ == "__main__":
         # if feature is None:
         # raise ValueError(f"--{feature_name} argument is required!")
         raw_feature[feature_name] = feature
-    cuda_device = experiment.config.cuda_devices[0] if experiment.config.use_gpu else None
+    cuda_device = saved_config.cuda_devices[0] if saved_config.use_gpu else None
     raw_to_tensor_fn = text_handler.raw_to_tensor_fn(
         data_reader,
         cuda_device=cuda_device,
