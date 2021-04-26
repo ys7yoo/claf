@@ -53,7 +53,9 @@ if __name__ == "__main__":
         question = fq.readlines()
 
     # set up experiment
-    experiment = Experiment(Mode.PREDICT, args.config(mode=Mode.PREDICT))
+    mode = Mode.PREDICT
+    config = args.config(mode=mode)
+    experiment = Experiment(mode, config)
 
     experiment.argument.context = ''.join(context)
     experiment.argument.question = ''.join(question)
@@ -61,18 +63,28 @@ if __name__ == "__main__":
     # set_global_seed(experiment.config.seed_num)  # For Reproducible
 
     # set up predict mode (experiment.set_predict_mode())
-    assert experiment.mode.endswith(Mode.PREDICT)
+    assert experiment.mode.endswith(mode)
 
     # experiment._create_data_and_token_makers()
-    token_makers = experiment._create_by_factory(TokenMakersFactory, experiment.config.token)
+    token_makers = TokenMakersFactory().create(experiment.config.token)
     tokenizers = token_makers["tokenizers"]
     del token_makers["tokenizers"]
     experiment.config.data_reader.tokenizers = tokenizers
 
-    data_reader = experiment._create_by_factory(DataReaderFactory, experiment.config.data_reader)
+    data_reader = DataReaderFactory().create(experiment.config.data_reader)
+
+    # load model checkpoint
+    cuda_devices = experiment.argument.cuda_devices
+    checkpoint_path = experiment.argument.checkpoint_path
+    prev_cuda_device_id = getattr(experiment.argument, "prev_cuda_device_id", None)
+
+    model_checkpoint = experiment._read_checkpoint(
+        cuda_devices, checkpoint_path, prev_cuda_device_id=prev_cuda_device_id
+    )
+
 
     # Token & Vocab
-    vocabs = utils.load_vocabs(experiment.model_checkpoint)
+    vocabs = utils.load_vocabs(model_checkpoint)
     for token_name, token_maker in token_makers.items():
         token_maker.set_vocab(vocabs[token_name])
     text_handler = TextHandler(token_makers, lazy_indexing=False)
@@ -88,11 +100,11 @@ if __name__ == "__main__":
     raw_to_tensor_fn = text_handler.raw_to_tensor_fn(
         data_reader,
         cuda_device=cuda_device,
-        helper=experiment.model_checkpoint.get("predict_helper", {})
+        helper=model_checkpoint.get("predict_helper", {})
     )
 
     # Model
-    model = experiment._create_model(token_makers, checkpoint=experiment.model_checkpoint)
+    model = experiment._create_model(token_makers, checkpoint=model_checkpoint)
 
     arguments = vars(experiment.argument)
 
