@@ -132,29 +132,27 @@ if __name__ == "__main__":
         token_maker.set_vocab(vocabs[token_name])
     text_handler = TextHandler(token_makers, lazy_indexing=False)
 
-    # Set predict config
+    # prepare raw feature and raw_to_tensor function
     raw_feature = {}
     for feature_name in data_reader.text_columns:
         feature = getattr(experiment.argument, feature_name, None)
         # if feature is None:
         # raise ValueError(f"--{feature_name} argument is required!")
         raw_feature[feature_name] = feature
+    assert raw_feature is not None
+
     cuda_device = saved_config.cuda_devices[0] if saved_config.use_gpu else None
     raw_to_tensor_fn = text_handler.raw_to_tensor_fn(
         data_reader,
         cuda_device=cuda_device,
         helper=model_checkpoint.get("predict_helper", {})
     )
+    assert raw_to_tensor_fn is not None
 
     # Model
     model = experiment._create_model(token_makers, checkpoint=model_checkpoint)
-
-    arguments = vars(experiment.argument)
-
-    assert raw_feature is not None
-    assert raw_to_tensor_fn is not None
-
     model.eval()
+
     with torch.no_grad():
         print(raw_feature)
         tensor_feature, helper = raw_to_tensor_fn(raw_feature)
@@ -168,5 +166,5 @@ if __name__ == "__main__":
             print(k, value)
             np.save(k, value)
 
-        result = predict(output_dict, arguments["context"], helper)
+        result = predict(output_dict, experiment.argument.context, helper)
         print(f"Predict: {result}")
